@@ -27,7 +27,7 @@ An asynchronous, event-driven Aadhaar masking microservices system built using *
 
 ### Run with Docker Compose (Recommended)
 
-1. Start all containers (MongoDB, Zookeeper, Kafka, API Server, Python Worker):
+1. Start all containers (MongoDB, Kafka [KRaft mode], API Server, Python Worker):
    ```bash
    docker-compose up --build
    ```
