@@ -101,6 +101,15 @@ def main():
         except Exception as err:
             error_msg = str(err)
             print(f"[Python Worker] ERROR processing task {task_id}: {error_msg}")
+
+            # Delete raw original file if it exists to preserve privacy even when masking fails
+            if original_file_path and os.path.exists(original_file_path):
+                try:
+                    os.remove(original_file_path)
+                    print(f"[Python Worker] Deleted raw file after error: '{original_file_path}'")
+                except Exception as del_err:
+                    print(f"[Python Worker] Warning: Failed to delete raw file '{original_file_path}': {del_err}")
+
             tasks_collection.update_one(
                 {'taskId': task_id},
                 {
@@ -111,6 +120,7 @@ def main():
                     }
                 }
             )
+
 
 if __name__ == '__main__':
     main()
