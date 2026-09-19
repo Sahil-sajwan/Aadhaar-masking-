@@ -53,5 +53,42 @@ class TestMultiNumberAadhaarMasker(unittest.TestCase):
         self.assertIn("110001", masked_result)
         self.assertIn("123456789012", masked_result)
 
+    def test_vid_and_other_numbers_preservation(self):
+        aadhaar_num = "7730 0889 2163"
+        vid_num = "9186 7890 6417 0314"
+        doc_text = f"""
+        Address: ROW H.n. 2 sonal nagar Opp. chavan saheb home, Jalna - 431203
+        Details as on: 17/12/2023
+        {aadhaar_num}
+        VID : {vid_num}
+        1947 | help@uidai.gov.in
+        """
+
+        masked = mask_aadhaar_string(doc_text)
+
+        # Aadhaar number MUST be masked (first 8 digits)
+        self.assertIn("XXXX XXXX 2163", masked)
+        self.assertNotIn(aadhaar_num, masked)
+
+        # Virtual ID (16 digits), PIN code, date, house number, helpline MUST NOT be masked
+        self.assertIn("VID : 9186 7890 6417 0314", masked)
+        self.assertIn("431203", masked)
+        self.assertIn("17/12/2023", masked)
+        self.assertIn("1947", masked)
+
+    def test_card_with_dob_header(self):
+        sample_card_text = """
+        GOVERMENT OF ADARSH
+        Name: Adarsh kumar
+        DOB : 17/06/1995
+        Sex: Male
+        5532 8524 4573
+        """
+        masked = mask_aadhaar_string(sample_card_text)
+        self.assertIn("XXXX XXXX 4573", masked)
+        self.assertNotIn("5532 8524 4573", masked)
+
 if __name__ == '__main__':
     unittest.main()
+
+

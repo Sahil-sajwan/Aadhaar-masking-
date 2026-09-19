@@ -76,7 +76,15 @@ def main():
             print(f"[Python Worker] Processing masking for '{original_file_path}'...")
             AadhaarMasker.mask_file(original_file_path, masked_file_path)
 
-            # 3) Update task status to COMPLETED in MongoDB
+            # 3) Delete the raw original file to preserve privacy and store only the masked file
+            if os.path.exists(original_file_path):
+                try:
+                    os.remove(original_file_path)
+                    print(f"[Python Worker] Deleted raw unmasked file: '{original_file_path}'")
+                except Exception as del_err:
+                    print(f"[Python Worker] Warning: Failed to delete raw file '{original_file_path}': {del_err}")
+
+            # 4) Update task status to COMPLETED in MongoDB
             tasks_collection.update_one(
                 {'taskId': task_id},
                 {
@@ -88,6 +96,7 @@ def main():
                 }
             )
             print(f"[Python Worker] Task {task_id} COMPLETED successfully. Masked file: '{masked_file_path}'")
+
 
         except Exception as err:
             error_msg = str(err)

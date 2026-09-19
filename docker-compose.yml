@@ -33,6 +33,9 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_LOG4J_LOGGERS: 'org.apache.kafka.image.loader.MetadataLoader=WARN,org.apache.kafka.image.loader=WARN,org.apache.kafka.image=WARN,org.apache.kafka.metadata=WARN'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: 'WARN'
+
 
   api-server:
     build:
