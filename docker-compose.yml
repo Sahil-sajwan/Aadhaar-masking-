@@ -36,7 +36,6 @@ services:
       KAFKA_LOG4J_LOGGERS: 'org.apache.kafka.image.loader.MetadataLoader=WARN,org.apache.kafka.image.loader=WARN,org.apache.kafka.image=WARN,org.apache.kafka.metadata=WARN'
       KAFKA_LOG4J_ROOT_LOGLEVEL: 'WARN'
 
-
   api-server:
     build:
       context: ./api-server
@@ -77,3 +76,6 @@ services:
 
 volumes:
   mongodb_data:
+
+
+

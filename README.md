@@ -83,3 +83,49 @@ An asynchronous, event-driven Aadhaar masking microservices system built using *
 ### 4. Download Masked File
 - **Endpoint**: `GET /api/tasks/:taskId/download`
 - Streams the processed masked output file for download.
+
+---
+
+## Production Deployment on AWS EC2 (Aiven Kafka & MongoDB Atlas)
+
+To deploy the **API Server** and **Python Worker** on AWS EC2 using managed **Aiven Kafka** and **MongoDB Atlas**:
+
+### 1. Prerequisites on EC2
+- Install Docker and Docker Compose on your EC2 instance (Ubuntu/Debian):
+  ```bash
+  sudo apt-get update
+  sudo apt-get install -y docker.io docker-compose
+  sudo usermod -aG docker $USER
+  ```
+
+### 2. Configure Environment & Certificates
+1. Create a `certs` directory on your EC2 instance and download your Aiven Kafka SSL certificates:
+   ```bash
+   mkdir -p certs
+   # Place ca.pem, service.cert, and service.key inside ./certs/
+   ```
+2. Create a `.env` file based on `.env.example`:
+   ```env
+   PORT=3000
+   MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.xxx.mongodb.net/aadhaar_db?retryWrites=true&w=majority
+   
+   KAFKA_BROKER=kafka-xxxx-your-project.aivencloud.com:23180
+   KAFKA_TOPIC=aadhaar-masking-tasks
+   KAFKA_GROUP_ID=aadhaar-masking-group
+   KAFKA_SECURITY_PROTOCOL=SSL
+   KAFKA_CA_CERT_PATH=/app/certs/ca.pem
+   KAFKA_ACCESS_CERT_PATH=/app/certs/service.cert
+   KAFKA_ACCESS_KEY_PATH=/app/certs/service.key
+   ```
+
+### 3. Deploy via Docker Compose
+Run the production EC2 docker-compose configuration:
+```bash
+docker compose -f docker-compose.ec2.yml up -d --build
+```
+
+Check logs:
+```bash
+docker compose -f docker-compose.ec2.yml logs -f
+```
+

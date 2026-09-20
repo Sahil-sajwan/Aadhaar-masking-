@@ -20,8 +20,13 @@ def get_db_client():
         try:
             client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
             client.admin.command('ping')
-            print(f"[Python Worker] Connected to MongoDB at {MONGODB_URI}")
-            return client['aadhaar_db']
+            sanitized_uri = MONGODB_URI.split('@')[-1] if '@' in MONGODB_URI else MONGODB_URI
+            print(f"[Python Worker] Connected to MongoDB at {sanitized_uri}")
+            try:
+                db = client.get_default_database()
+            except Exception:
+                db = client['aadhaar_db']
+            return db
         except Exception as e:
             print(f"[Python Worker] MongoDB connection error: {e}. Retrying in 5 seconds...")
             time.sleep(5)
@@ -30,15 +35,57 @@ def get_db_client():
 def get_kafka_consumer():
     while True:
         try:
+            security_protocol = os.getenv('KAFKA_SECURITY_PROTOCOL', 'PLAINTEXT').upper()
+            
+            kafka_kwargs = {
+                "bootstrap_servers": [KAFKA_BROKER],
+                "group_id": KAFKA_GROUP_ID,
+                "value_deserializer": lambda m: json.loads(m.decode('utf-8')),
+                "auto_offset_reset": 'earliest',
+                "enable_auto_commit": True,
+                "security_protocol": security_protocol,
+            }
+
+            ca_path = os.getenv('KAFKA_CA_CERT_PATH')
+            cert_path = os.getenv('KAFKA_ACCESS_CERT_PATH')
+            key_path = os.getenv('KAFKA_ACCESS_KEY_PATH')
+
+            # Handle certificate raw string contents if provided
+            if not ca_path and os.getenv('KAFKA_CA_CERT'):
+                temp_ca = '/tmp/ca.pem'
+                with open(temp_ca, 'w') as f:
+                    f.write(os.getenv('KAFKA_CA_CERT'))
+                ca_path = temp_ca
+
+            if not cert_path and os.getenv('KAFKA_ACCESS_CERT'):
+                temp_cert = '/tmp/service.cert'
+                with open(temp_cert, 'w') as f:
+                    f.write(os.getenv('KAFKA_ACCESS_CERT'))
+                cert_path = temp_cert
+
+            if not key_path and os.getenv('KAFKA_ACCESS_KEY'):
+                temp_key = '/tmp/service.key'
+                with open(temp_key, 'w') as f:
+                    f.write(os.getenv('KAFKA_ACCESS_KEY'))
+                key_path = temp_key
+
+            if ca_path and os.path.exists(ca_path):
+                kafka_kwargs['ssl_cafile'] = ca_path
+            if cert_path and os.path.exists(cert_path):
+                kafka_kwargs['ssl_certfile'] = cert_path
+            if key_path and os.path.exists(key_path):
+                kafka_kwargs['ssl_keyfile'] = key_path
+
+            if security_protocol in ('SASL_SSL', 'SASL_PLAINTEXT'):
+                kafka_kwargs['sasl_mechanism'] = os.getenv('KAFKA_SASL_MECHANISM', 'SCRAM-SHA-256').upper()
+                kafka_kwargs['sasl_plain_username'] = os.getenv('KAFKA_SASL_USERNAME', '')
+                kafka_kwargs['sasl_plain_password'] = os.getenv('KAFKA_SASL_PASSWORD', '')
+
             consumer = KafkaConsumer(
                 KAFKA_TOPIC,
-                bootstrap_servers=[KAFKA_BROKER],
-                group_id=KAFKA_GROUP_ID,
-                value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-                auto_offset_reset='earliest',
-                enable_auto_commit=True
+                **kafka_kwargs
             )
-            print(f"[Python Worker] Connected to Kafka broker {KAFKA_BROKER}, listening on topic '{KAFKA_TOPIC}'")
+            print(f"[Python Worker] Connected to Kafka broker {KAFKA_BROKER} ({security_protocol}), listening on topic '{KAFKA_TOPIC}'")
             return consumer
         except Exception as e:
             print(f"[Python Worker] Kafka connection error: {e}. Retrying in 5 seconds...")
