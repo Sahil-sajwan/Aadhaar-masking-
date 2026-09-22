@@ -364,7 +364,7 @@
       formData.append('file', currentFile);
 
       try {
-        const response = await fetch('/api/upload', {
+        const response = await fetch('api/upload', {
           method: 'POST',
           body: formData
         });
@@ -415,7 +415,7 @@
 
     async function fetchTaskStatus(taskId) {
       try {
-        const response = await fetch(`/api/tasks/${taskId}`);
+        const response = await fetch(`api/tasks/${taskId}`);
         const data = await response.json();
 
         if (response.ok) {

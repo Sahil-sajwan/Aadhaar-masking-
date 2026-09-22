@@ -72,7 +72,7 @@ export const getTaskStatus = async (req: Request, res: Response): Promise<Respon
         taskId: task.taskId,
         status: 'COMPLETED',
         originalFilename: task.originalFilename,
-        downloadUrl: `/api/tasks/${task.taskId}/download`,
+        downloadUrl: `api/tasks/${task.taskId}/download`,
         completedAt: task.updatedAt
       });
     } else if (task.status === 'FAILED') {
